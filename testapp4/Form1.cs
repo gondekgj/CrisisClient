@@ -12,6 +12,9 @@ namespace testapp4
         private string selectedProcessName;
         private PerformanceCounter cpuCounter;
         private PerformanceCounter ramCounter;
+        private Process selectedProcess;
+        private TimeSpan lastTotalProcessorTime;
+        private DateTime lastCpuMeasurementTime;
 
         public Form1()
         {
@@ -38,7 +41,7 @@ namespace testapp4
 
             if (!string.IsNullOrEmpty(selectedProcessName))
             {
-                UpdateSoftwareUptime(selectedProcessName);
+                UpdateSoftwareUptimeAndUsage(selectedProcessName);
             }
         }
 
@@ -59,24 +62,31 @@ namespace testapp4
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectedProcessName = comboBox1.SelectedItem?.ToString();
+
             softwareStartTime = null;
+            selectedProcess = null;
+            lastTotalProcessorTime = TimeSpan.Zero;
+            lastCpuMeasurementTime = DateTime.Now;
         }
 
-        private void UpdateSoftwareUptime(string processName)
+        private void UpdateSoftwareUptimeAndUsage(string processName)
         {
             Process[] processes = Process.GetProcessesByName(processName);
 
             if (processes.Length > 0)
             {
-                Process targetProcess = processes.FirstOrDefault();
+                selectedProcess = processes.FirstOrDefault();
 
-                if (softwareStartTime == null || targetProcess.StartTime != softwareStartTime)
+                if (softwareStartTime == null || selectedProcess.StartTime != softwareStartTime)
                 {
-                    softwareStartTime = targetProcess.StartTime;
+                    softwareStartTime = selectedProcess.StartTime;
                 }
 
                 TimeSpan softwareUptime = DateTime.Now - softwareStartTime.Value;
-                label2.Text = $"{processName}.exe Uptime: {softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s";
+
+                label2.Text = $"{processName}.exe | Uptime: {softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s";
+
+                UpdateProcessResourceUsage(selectedProcess);
             }
             else
             {
@@ -84,8 +94,28 @@ namespace testapp4
                 label2.Text = $"{processName}.exe is not running.";
             }
         }
+        private void UpdateProcessResourceUsage(Process process)
+        {
+            long memoryUsage = process.WorkingSet64 / (1024 * 1024); // Convert to MB
 
-            private void UpdateResourceUsage()
+            TimeSpan currentTotalProcessorTime = process.TotalProcessorTime;
+            DateTime currentCpuMeasurementTime = DateTime.Now;
+
+            double cpuUsage = 0;
+            double timeElapsed = (currentCpuMeasurementTime - lastCpuMeasurementTime).TotalMilliseconds;
+
+            if (timeElapsed > 0)
+            {
+                cpuUsage = (currentTotalProcessorTime - lastTotalProcessorTime).TotalMilliseconds / timeElapsed * 100 / Environment.ProcessorCount;
+            }
+
+            lastTotalProcessorTime = currentTotalProcessorTime;
+            lastCpuMeasurementTime = currentCpuMeasurementTime;
+
+            label4.Text = $"{selectedProcessName}.exe | CPU Usage: {cpuUsage:F2}% | App Memory Usage: {memoryUsage} MB";
+        }
+
+        private void UpdateResourceUsage()
             {
                 float cpuUsage = cpuCounter.NextValue();
                 float availableRam = ramCounter.NextValue();

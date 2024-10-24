@@ -34,13 +34,14 @@
             label2 = new Label();
             timer1 = new System.Windows.Forms.Timer(components);
             label3 = new Label();
+            label4 = new Label();
             SuspendLayout();
             // 
             // comboBox1
             // 
             comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(44, 19);
+            comboBox1.Location = new Point(44, 27);
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(176, 23);
             comboBox1.TabIndex = 0;
@@ -49,7 +50,7 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(44, 56);
+            label1.Location = new Point(44, 65);
             label1.Name = "label1";
             label1.Size = new Size(93, 15);
             label1.TabIndex = 1;
@@ -58,7 +59,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(44, 84);
+            label2.Location = new Point(44, 94);
             label2.Name = "label2";
             label2.Size = new Size(101, 15);
             label2.TabIndex = 2;
@@ -71,17 +72,27 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(44, 116);
+            label3.Location = new Point(44, 122);
             label3.Name = "label3";
-            label3.Size = new Size(38, 15);
+            label3.Size = new Size(139, 15);
             label3.TabIndex = 3;
-            label3.Text = "label3";
+            label3.Text = "Loading Resource Usage ";
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(44, 149);
+            label4.Name = "label4";
+            label4.Size = new Size(145, 15);
+            label4.TabIndex = 4;
+            label4.Text = "Software Resource Usage: ";
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(350, 188);
+            ClientSize = new Size(498, 195);
+            Controls.Add(label4);
             Controls.Add(label3);
             Controls.Add(comboBox1);
             Controls.Add(label1);
@@ -100,5 +111,6 @@
         private Label label2;
         private ComboBox comboBox1;
         private Label label3;
+        private Label label4;
     }
 }
