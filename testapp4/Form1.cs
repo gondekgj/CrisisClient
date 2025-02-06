@@ -1,8 +1,17 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Windows.Forms;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Security.Cryptography.X509Certificates;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace testapp4
 {
@@ -15,6 +24,14 @@ namespace testapp4
         private Process selectedProcess;
         private TimeSpan lastTotalProcessorTime;
         private DateTime lastCpuMeasurementTime;
+        public double cpuUsageProgram = 0;
+        public long memoryUsageProgram = 0;
+        public TimeSpan softwareUptime;
+        public double timeElapsedProgram = 0;
+        public TimeSpan uptimeProgram;
+        public float cpuUsageSystem = 0;
+        public float availableRamSystem = 0;
+        public long systemElapsed = 0;
 
         public Form1()
         {
@@ -22,20 +39,35 @@ namespace testapp4
 
             cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
             ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-        }
 
+            //ip
+            string ipPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText.txt");
+            string fileContent = ReadTextFromFile(ipPath);
+            //port
+            string portPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText2.txt");
+            string fileContent2 = ReadTextFromFile(portPath);
+            //bring together
+            label6.Text = fileContent + ":" + fileContent2;
+
+        }
+        //loads form aka timers
         private void Form1_Load(object sender, EventArgs e)
         {
             PopulateProcessComboBox();
             timer1.Interval = 1000;
             timer1.Enabled = true;
             timer1.Start();
-        }
 
+            timer2.Interval = 60000;
+            timer2.Tick += new EventHandler(LogProcessStatus);
+            timer2.Start();
+        }
+        //big timer
         private void timer1_Tick(object sender, EventArgs e)
         {
             TimeSpan systemUptime = TimeSpan.FromMilliseconds(Environment.TickCount);
             label1.Text = $"System Uptime: {systemUptime.Days}d {systemUptime.Hours}h {systemUptime.Minutes}m {systemUptime.Seconds}s";
+            systemElapsed = Environment.TickCount64;
 
             UpdateResourceUsage();
 
@@ -44,7 +76,7 @@ namespace testapp4
                 UpdateSoftwareUptimeAndUsage(selectedProcessName);
             }
         }
-
+        //shows systems running
         private void PopulateProcessComboBox()
         {
             comboBox1.Items.Clear();
@@ -58,16 +90,16 @@ namespace testapp4
 
             comboBox1.SelectedIndex = -1;
         }
-
+        //selecting software/service
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectedProcessName = comboBox1.SelectedItem?.ToString();
-
             softwareStartTime = null;
             selectedProcess = null;
             lastTotalProcessorTime = TimeSpan.Zero;
             lastCpuMeasurementTime = DateTime.Now;
         }
+        //updates usage pt1
 
         private void UpdateSoftwareUptimeAndUsage(string processName)
         {
@@ -83,44 +115,230 @@ namespace testapp4
                 }
 
                 TimeSpan softwareUptime = DateTime.Now - softwareStartTime.Value;
-
                 label2.Text = $"{processName}.exe | Uptime: {softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s";
 
                 UpdateProcessResourceUsage(selectedProcess);
             }
             else
             {
+                //force value on process
                 softwareStartTime = null;
+                selectedProcess = null;
+                memoryUsageProgram = 0;
+                cpuUsageProgram = 0;
                 label2.Text = $"{processName}.exe is not running.";
+                label4.Text = $"{processName}.exe | CPU Usage: 0.00% | App Memory Usage: 0 MB";
             }
         }
-        private void UpdateProcessResourceUsage(Process process)
+        //updates usage pt2
+
+        public void UpdateProcessResourceUsage(Process process)
         {
-            long memoryUsage = process.WorkingSet64 / (1024 * 1024); // Convert to MB
+            memoryUsageProgram = process.WorkingSet64 / (1024 * 1024); // Convert to MB
 
             TimeSpan currentTotalProcessorTime = process.TotalProcessorTime;
             DateTime currentCpuMeasurementTime = DateTime.Now;
 
-            double cpuUsage = 0;
-            double timeElapsed = (currentCpuMeasurementTime - lastCpuMeasurementTime).TotalMilliseconds;
+            timeElapsedProgram = (currentCpuMeasurementTime - lastCpuMeasurementTime).TotalMilliseconds;
 
-            if (timeElapsed > 0)
+            if (timeElapsedProgram > 0)
             {
-                cpuUsage = (currentTotalProcessorTime - lastTotalProcessorTime).TotalMilliseconds / timeElapsed * 100 / Environment.ProcessorCount;
+                cpuUsageProgram = (currentTotalProcessorTime - lastTotalProcessorTime).TotalMilliseconds / timeElapsedProgram * 100 / Environment.ProcessorCount;
+            }
+            else
+            {
+                cpuUsageProgram = 0;
             }
 
             lastTotalProcessorTime = currentTotalProcessorTime;
             lastCpuMeasurementTime = currentCpuMeasurementTime;
 
-            label4.Text = $"{selectedProcessName}.exe | CPU Usage: {cpuUsage:F2}% | App Memory Usage: {memoryUsage} MB";
+            label4.Text = $"{selectedProcessName}.exe | CPU Usage: {cpuUsageProgram:F2}% | App Memory Usage: {memoryUsageProgram} MB";
         }
-
-        private void UpdateResourceUsage()
+        //log to file
+        private async void LogProcessStatus(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(selectedProcessName))
             {
-                float cpuUsage = cpuCounter.NextValue();
-                float availableRam = ramCounter.NextValue();
+                Process[] processes = Process.GetProcessesByName(selectedProcessName);
+                string logMessage;
+                string jsonString;
+                string state;
+                string filePath2 = Path.Combine(Directory.GetCurrentDirectory(), "generatedData.json");
+                string filePath3 = Path.Combine(Directory.GetCurrentDirectory(), "generatedDataMain.json");
+                
 
-                label3.Text = $"CPU Usage: {cpuUsage:F2}% | Available RAM: {availableRam:F2} MB";
+                //logs json and text
+                if (processes.Length > 0)
+                {
+                    logMessage = $"{DateTime.Now}: {selectedProcessName}.exe is running on {Environment.MachineName}.";
+                    jsonString = $"{DateTime.Now}: {selectedProcessName}.exe is running on {Environment.MachineName}.";
+                    state = "true";
+                }
+                else
+                {
+                    logMessage = $"{DateTime.Now}: {selectedProcessName}.exe is NOT running.";
+                    jsonString = $"{DateTime.Now}: {selectedProcessName}.exe is NOT running.";
+                    state = "false";
+                }
+
+                //text log
+                LogToFile(logMessage);
+
+                //json log
+
+                WriteJsonToFile(jsonString, filePath2);
+                Console.WriteLine($"JSON file has been created at: {filePath2}");
+
+                TimeSpan softwareUptime = DateTime.Now - softwareStartTime.Value;
+                TimeSpan systemUptime = TimeSpan.FromMilliseconds(Environment.TickCount);
+
+                // write big json log
+                var data = new
+                {
+                    Time = DateTime.Now,
+                    Process = selectedProcessName,
+                    Machine = Environment.MachineName,
+                    Running = state,
+                    SystemUptime = $"{systemUptime.Days}d {systemUptime.Hours}h {systemUptime.Minutes}m {systemUptime.Seconds}s",
+                    SystemUsage = $"{cpuUsageSystem:F2}%",
+                    SystemMemAvaliable = $"{availableRamSystem} MB",
+                    ProcessUptime = $"{softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s",
+                    ProcessUsage = $"{cpuUsageProgram:F2}%",
+                    ProcessMem = $"{memoryUsageProgram} MB"
+                    
+                };
+                string jsonWrite = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(filePath3, jsonWrite);
+
+                PacketSending();
+
             }
         }
+        //write to text
+        private void LogToFile(string message)
+        {
+            string logFilePath = "ProcessStatusLog.txt";
+
+            using (StreamWriter writer = new StreamWriter(logFilePath, true))
+            {
+                writer.WriteLine(message);
+            }
+        }
+        //write json file
+        public static void WriteJsonToFile(string jsonContent, string filePath2)
+        {
+            try
+            {
+                // Write the JSON content to the file
+                File.WriteAllText(filePath2, jsonContent);
+                Console.WriteLine("JSON file created successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing to file: {ex.Message}");
+            }
+        }
+        //updating resource usage
+        private void UpdateResourceUsage()
+        {
+            cpuUsageSystem = cpuCounter.NextValue();
+            availableRamSystem = ramCounter.NextValue();
+
+            label3.Text = $"CPU Usage: {cpuUsageSystem:F2}% | Available RAM: {availableRamSystem:F2} MB";
+        }
+        //open config menu
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Form2 newForm = new Form2(this);
+            newForm.Show();
+        }
+        //for reading from file
+        private string ReadTextFromFile(string filePath)
+        {
+            try
+            {
+                return File.ReadAllText(filePath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading file: {ex.Message}");
+                return string.Empty;
+            }
+        }
+        //active update of ip and port
+        public void ExecuteAction()
+        {
+            string ipPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText.txt");
+            string fileContent = ReadTextFromFile(ipPath);
+            //port
+            string portPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText2.txt");
+            string fileContent2 = ReadTextFromFile(portPath);
+            //bring together
+            label6.Text = fileContent + ":" + fileContent2;
+        }
+
+
+
+
+
+        public async Task PacketSending()
+        {
+            string ipPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText.txt");
+            string fileContent = ReadTextFromFile(ipPath);
+            //port
+            string portPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText2.txt");
+            string fileContent2 = ReadTextFromFile(portPath);
+
+            // Define the local network URL to send the JSON file
+
+            //string url = "http://192.168.68.85:5000/clientUpdate"; PATH FOR SENDING HOME
+
+            string url = "http://"+fileContent+":"+fileContent2+"/clientUpdate";
+
+            // Path to the JSON file you want to send
+
+            //string filePath = @"C:\Users\jgond\Downloads\json\example.json"; // PATH FOR JSON FILE
+
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "generatedData.json");
+
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    // Read JSON content from the file
+                    string jsonContent = await File.ReadAllTextAsync(filePath);
+
+                    // Create an HTTP client
+                    using (HttpClient client = new HttpClient())
+                    {
+                        // Create HTTP content with JSON data
+                        HttpContent content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                        // Send POST request
+                        HttpResponseMessage response = await client.PostAsync(url, content);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            Console.WriteLine("File uploaded successfully!");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Failed to upload. Status Code: {response.StatusCode}");
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("File not found!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
+
+        //
     }
+}
