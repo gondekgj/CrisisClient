@@ -133,7 +133,7 @@
             Controls.Add(label1);
             Controls.Add(label2);
             Name = "Form1";
-            Text = "Uptime Tracker";
+            Text = "Crisis Client";
             Load += Form1_Load;
             ResumeLayout(false);
             PerformLayout();
