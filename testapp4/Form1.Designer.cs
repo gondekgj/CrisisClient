@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             comboBox1 = new ComboBox();
             label1 = new Label();
             label2 = new Label();
@@ -132,6 +133,7 @@
             Controls.Add(comboBox1);
             Controls.Add(label1);
             Controls.Add(label2);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form1";
             Text = "Crisis Client";
             Load += Form1_Load;
