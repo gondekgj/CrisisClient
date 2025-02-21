@@ -100,7 +100,6 @@ namespace testapp4
             lastCpuMeasurementTime = DateTime.Now;
         }
         //updates usage pt1
-
         private void UpdateSoftwareUptimeAndUsage(string processName)
         {
             Process[] processes = Process.GetProcessesByName(processName);
@@ -131,7 +130,6 @@ namespace testapp4
             }
         }
         //updates usage pt2
-
         public void UpdateProcessResourceUsage(Process process)
         {
             memoryUsageProgram = process.WorkingSet64 / (1024 * 1024); // Convert to MB
@@ -182,18 +180,25 @@ namespace testapp4
                     state = "false";
                 }
 
-                //text log
+                //test logging of text and json file
                 LogToFile(logMessage);
-
-                //json log
 
                 WriteJsonToFile(jsonString, filePath2);
                 Console.WriteLine($"JSON file has been created at: {filePath2}");
 
-                TimeSpan softwareUptime = DateTime.Now - softwareStartTime.Value;
-                TimeSpan systemUptime = TimeSpan.FromMilliseconds(Environment.TickCount);
+                string softwareUptimeString = "N/A";
+                if (softwareStartTime.HasValue)
+                {
+                    TimeSpan softwareUptime = DateTime.Now - softwareStartTime.Value;
+                    softwareUptimeString = $"{softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s";
+                }
+                else
+                {
+                    Console.WriteLine("Warning: softwareStartTime is null.");
+                }
+                TimeSpan systemUptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
 
-                // write big json log
+                // write formal json log
                 var data = new
                 {
                     Time = DateTime.Now,
@@ -203,9 +208,9 @@ namespace testapp4
                     SystemUptime = $"{systemUptime.Days}d {systemUptime.Hours}h {systemUptime.Minutes}m {systemUptime.Seconds}s",
                     SystemUsage = $"{cpuUsageSystem:F2}%",
                     SystemMemAvaliable = $"{availableRamSystem} MB",
-                    ProcessUptime = $"{softwareUptime.Days}d {softwareUptime.Hours}h {softwareUptime.Minutes}m {softwareUptime.Seconds}s",
+                    ProcessUptime = softwareUptimeString,
                     ProcessUsage = $"{cpuUsageProgram:F2}%",
-                    ProcessMem = $"{memoryUsageProgram} MB"
+                    ProcessMemUsage = $"{memoryUsageProgram} MB"
                     
                 };
                 string jsonWrite = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
@@ -278,44 +283,37 @@ namespace testapp4
             label6.Text = fileContent + ":" + fileContent2;
         }
 
-
-
-
-
         public async Task PacketSending()
         {
+            //address
             string ipPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText.txt");
             string fileContent = ReadTextFromFile(ipPath);
             //port
             string portPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText2.txt");
             string fileContent2 = ReadTextFromFile(portPath);
 
-            // Define the local network URL to send the JSON file
-
+            //Network URL for json sending
             //string url = "http://192.168.68.85:5000/clientUpdate"; PATH FOR SENDING HOME
-
             string url = "http://"+fileContent+":"+fileContent2+"/clientUpdate";
 
-            // Path to the JSON file you want to send
-
+            //Path for json file
             //string filePath = @"C:\Users\jgond\Downloads\json\example.json"; // PATH FOR JSON FILE
-
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "generatedData.json");
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "generatedDataMain.json");
 
             try
             {
                 if (File.Exists(filePath))
                 {
-                    // Read JSON content from the file
+                    //Reads JSON content from the file
                     string jsonContent = await File.ReadAllTextAsync(filePath);
 
-                    // Create an HTTP client
+                    //Creates the http client
                     using (HttpClient client = new HttpClient())
                     {
-                        // Create HTTP content with JSON data
+                        //Creates http packet with json info
                         HttpContent content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                        // Send POST request
+                        //Sends post request
                         HttpResponseMessage response = await client.PostAsync(url, content);
 
                         if (response.IsSuccessStatusCode)
@@ -339,6 +337,5 @@ namespace testapp4
             }
         }
 
-        //
     }
 }
