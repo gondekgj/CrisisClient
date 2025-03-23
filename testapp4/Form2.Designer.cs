@@ -34,6 +34,8 @@
             button1 = new Button();
             label3 = new Label();
             textBox2 = new TextBox();
+            textBox3 = new TextBox();
+            label4 = new Label();
             SuspendLayout();
             // 
             // label1
@@ -63,7 +65,7 @@
             // 
             // button1
             // 
-            button1.Location = new Point(128, 99);
+            button1.Location = new Point(124, 128);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 3;
@@ -74,7 +76,7 @@
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(48, 73);
+            label3.Location = new Point(48, 68);
             label3.Name = "label3";
             label3.Size = new Size(32, 15);
             label3.TabIndex = 4;
@@ -83,16 +85,35 @@
             // 
             // textBox2
             // 
-            textBox2.Location = new Point(86, 70);
+            textBox2.Location = new Point(86, 65);
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(133, 23);
             textBox2.TabIndex = 5;
+            // 
+            // textBox3
+            // 
+            textBox3.Location = new Point(115, 96);
+            textBox3.Name = "textBox3";
+            textBox3.Size = new Size(100, 23);
+            textBox3.TabIndex = 6;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Location = new Point(48, 99);
+            label4.Name = "label4";
+            label4.Size = new Size(61, 15);
+            label4.TabIndex = 7;
+            label4.Text = "Service ID:";
+            label4.Click += label4_Click;
             // 
             // Form2
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(338, 132);
+            ClientSize = new Size(338, 163);
+            Controls.Add(label4);
+            Controls.Add(textBox3);
             Controls.Add(textBox2);
             Controls.Add(label3);
             Controls.Add(button1);
@@ -113,5 +134,7 @@
         private Button button1;
         private Label label3;
         private TextBox textBox2;
+        private TextBox textBox3;
+        private Label label4;
     }
 }

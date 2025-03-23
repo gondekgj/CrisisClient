@@ -25,9 +25,13 @@ namespace testapp4
             string portDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string portPath = Path.Combine(projectDirectory, "savedText2.txt");
 
+            string IDDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string IDPath = Path.Combine(projectDirectory, "savedText3.txt");
+
             //set the file path inside the project directory
             filePath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName, "savedText.txt");
             portPath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName, "savedText2.txt");
+            IDPath = Path.Combine(Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName, "savedText3.txt");
 
             //load text from the file when the form loads
             this.Load += new EventHandler(Form2_Load);
@@ -39,6 +43,8 @@ namespace testapp4
             string filePath = Path.Combine(projectDirectory, "savedText.txt");
             string portDirectory = AppDomain.CurrentDomain.BaseDirectory;
             string portPath = Path.Combine(projectDirectory, "savedText2.txt");
+            string IDDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            string IDPath = Path.Combine(projectDirectory, "savedText3.txt");
 
             //load ip
             try
@@ -66,12 +72,26 @@ namespace testapp4
             {
                 MessageBox.Show($"Error loading text: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            //load ID
+            try
+
+            {
+                if (File.Exists(IDPath))
+                {
+                    textBox3.Text = File.ReadAllText(IDPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading text: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
         //saves things after button
         private void button1_Click(object sender, EventArgs e)
         {
             string textToSave = textBox1.Text;
             string portToSave = textBox2.Text;
+            string IDToSave = textBox3.Text;
 
             if (!string.IsNullOrWhiteSpace(textToSave))
             {
@@ -82,10 +102,13 @@ namespace testapp4
                     string filePath = Path.Combine(projectDirectory, "savedText.txt");
                     string portDirectory = AppDomain.CurrentDomain.BaseDirectory;
                     string portPath = Path.Combine(projectDirectory, "savedText2.txt");
+                    string IDDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    string IDPath = Path.Combine(projectDirectory, "savedText3.txt");
 
                     //writes text
                     File.WriteAllText(filePath, textToSave);
                     File.WriteAllText(portPath, portToSave);
+                    File.WriteAllText(IDPath, IDToSave);
 
                     MessageBox.Show($"Config saved successfully");
                     //debug text - MessageBox.Show($"Text saved successfully at: {filePath}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -105,6 +128,11 @@ namespace testapp4
 
         //na
         private void label3_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label4_Click(object sender, EventArgs e)
         {
 
         }

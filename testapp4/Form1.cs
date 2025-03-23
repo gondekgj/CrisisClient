@@ -12,6 +12,8 @@ using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Cryptography.X509Certificates;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
+using System.Net.Sockets;
+using System.Net;
 
 namespace testapp4
 {
@@ -164,7 +166,8 @@ namespace testapp4
                 string state;
                 string filePath2 = Path.Combine(Directory.GetCurrentDirectory(), "generatedData.json");
                 string filePath3 = Path.Combine(Directory.GetCurrentDirectory(), "generatedDataMain.json");
-                
+
+                string localIP = GetLocalIPAddress();
 
                 //logs json and text
                 if (processes.Length > 0)
@@ -198,6 +201,9 @@ namespace testapp4
                 }
                 TimeSpan systemUptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
 
+                string IDPath = Path.Combine(Directory.GetCurrentDirectory(), "savedText3.txt");
+                string IDServce = ReadTextFromFile(IDPath);
+
                 // write formal json log
                 var data = new
                 {
@@ -205,13 +211,15 @@ namespace testapp4
                     Process = selectedProcessName,
                     Machine = Environment.MachineName,
                     Running = state,
+                    IPAddress = localIP,
+                    SelectedServiceID = IDServce,
                     SystemUptime = $"{systemUptime.Days}d {systemUptime.Hours}h {systemUptime.Minutes}m {systemUptime.Seconds}s",
                     SystemUsage = $"{cpuUsageSystem:F2}%",
                     SystemMemAvaliable = $"{availableRamSystem} MB",
                     ProcessUptime = softwareUptimeString,
                     ProcessUsage = $"{cpuUsageProgram:F2}%",
-                    ProcessMemUsage = $"{memoryUsageProgram} MB"
-                    
+                    ProcessMemUsage = $"{memoryUsageProgram} MB"                 
+
                 };
                 string jsonWrite = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(filePath3, jsonWrite);
@@ -294,7 +302,7 @@ namespace testapp4
 
             //Network URL for json sending
             //string url = "http://192.168.68.85:5000/clientUpdate"; PATH FOR SENDING HOME
-            string url = "http://"+fileContent+":"+fileContent2+"/clientUpdate";
+            string url = "http://" + fileContent + ":" + fileContent2 + "/clientUpdate";
 
             //Path for json file
             //string filePath = @"C:\Users\jgond\Downloads\json\example.json"; // PATH FOR JSON FILE
@@ -337,5 +345,38 @@ namespace testapp4
             }
         }
 
+        static string GetLocalIPAddress()
+        {
+            string localIP = string.Empty;
+            try
+            {
+                // Get the host name
+                string hostName = Dns.GetHostName();
+
+                // Get the list of IP addresses associated with the host
+                IPAddress[] ipAddresses = Dns.GetHostAddresses(hostName);
+
+                // Loop through the addresses and find the first IPv4 address
+                foreach (IPAddress ip in ipAddresses)
+                {
+                    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error retrieving IP address: " + ex.Message);
+            }
+
+            return localIP;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            PacketSending();
+        }
     }
 }
